@@ -121,7 +121,7 @@ const CreateBlogForm: React.FC = () => {
       navigate("/"); // Redirect to home
     } catch (error) {
       const err = error as AxiosError<{ message?: string }>;
-      toast.error(err.response?.data?.message || "Failed to create blog");
+      toast.error(err.response?.data.message || "Failed to create blog");
       console.error("Blog creation error:", error);
     } finally {
       setIsSubmitting(false);

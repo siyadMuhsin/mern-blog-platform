@@ -17,7 +17,7 @@ const useAuthHook = () => {
       }
     } catch (error: any) {
       console.error("Error in authentication check:", error.message);
-      toast.error("Session expired. Please log in again.");
+      // toast.error("Session expired. Please log in again.");
       logout();
     }
   };

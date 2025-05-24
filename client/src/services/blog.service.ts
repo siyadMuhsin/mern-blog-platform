@@ -20,7 +20,7 @@ const createBlog = async (data: FormData) => {
     });
     return response.data;
   } catch (error: any) {
-    throw new Error(error?.response?.data?.message);
+    throw new Error(error?.response?.data?.msg);
   }
 };
 const fetching=async (page:number,limit:number)=>{
