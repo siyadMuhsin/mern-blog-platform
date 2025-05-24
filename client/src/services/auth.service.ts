@@ -1,6 +1,6 @@
 
 import  api from "../config/axiosConfig"
-import { useAuth } from "../context/auth.context";
+
 
 const loginUser=async(email:string,password:string)=>{
     try {
@@ -11,8 +11,7 @@ const loginUser=async(email:string,password:string)=>{
         throw new Error(
       error.response?.data?.message ||error.response.data.errors[0].message|| "An error occurred during registration"
     );
-    }
-
+}
 }
 const registerUser=async(username:string,email:string,password:string)=>{
     try {

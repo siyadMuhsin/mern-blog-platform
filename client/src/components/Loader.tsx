@@ -1,5 +1,6 @@
 import React from "react";
-import { FiLoader, FiCircle, FiClock } from "react-icons/fi";
+import { FiClock } from "react-icons/fi";
+
 
 type SpinnerStyle = "dots" | "pulse" | "bars" | "clock" | "modern";
 

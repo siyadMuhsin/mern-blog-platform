@@ -1,5 +1,5 @@
 import React, { type JSX } from "react";
-import { Navigate, replace } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import { useAuth } from "../context/auth.context";
 
 interface RouteProps {

@@ -1,4 +1,4 @@
-import { Route, BrowserRouter as Router, Routes } from "react-router-dom";
+import { Route, Routes } from "react-router-dom";
 import { AuthForm } from "../pages/AuthPage";
 import Home from "../pages/Home";
 import ProtectedRoute, { PublicOnlyRoute } from "./protected.routes";

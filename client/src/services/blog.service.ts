@@ -1,7 +1,7 @@
 
 import api from "../config/axiosConfig";
 import type { IBlog } from "../interfaces/interface";
-import type { BlogFormData } from "../pages/CreateBlog";
+
 
 
 const createBlog = async (data: FormData) => {
