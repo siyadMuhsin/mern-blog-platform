@@ -1,5 +1,5 @@
 
-import type { AxiosError } from "axios";
+
 import api from "../config/axiosConfig";
 import type { IBlog } from "../interfaces/interface";
 

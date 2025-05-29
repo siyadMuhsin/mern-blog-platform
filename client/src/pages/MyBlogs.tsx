@@ -7,7 +7,7 @@ import {
   fetchUserDrafts,
 } from "../services/blog.service";
 import { toast } from "react-toastify";
-import { Link, useNavigate } from "react-router-dom";
+import {  useNavigate } from "react-router-dom";
 import type { IBlog } from "../interfaces/interface";
 import BlogCard from "../components/BlogCard";
 import EditBlogModal from "../components/EditBlog";
@@ -205,11 +205,7 @@ const handlePublishSuccess = useCallback((blogId: string) => {
       setPublishedBlogs(prev => [updatedBlog, ...prev]);
     }
   }, [draftBlogs]);
-  const handleDeleteClick = (e: React.MouseEvent, id: string) => {
-    e.preventDefault();
-    setBlogToDelete(id);
-    setIsDeleteModalOpen(true);
-  };
+
 
   const currentBlogs = activeTab === "published" ? publishedBlogs : draftBlogs;
   const currentLoading = activeTab === "published" ? isLoading : isLoadingDrafts;
