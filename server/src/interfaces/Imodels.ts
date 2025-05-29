@@ -15,5 +15,6 @@ export interface IBlog extends Document{
     content:string,
     imageUrl:string,
     createdAt:Date,
+    isPublished:boolean
     userId:{_id:string,username:string,email:string}|string|mongoose.Types.ObjectId
 }

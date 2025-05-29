@@ -104,7 +104,6 @@ if (!passwordRegex.test(password)) {
   async getCorrentUser(req:AuthRequest,res:Response):Promise<void>{
     try {
       const userId=req.user as string
-      console.log(userId);
       // return
       const result=await this._authService.getUser(userId)
       this.sendResponse(res,result,HttpStatus.OK)

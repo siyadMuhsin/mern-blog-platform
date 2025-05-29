@@ -2,19 +2,23 @@ import { ObjectId } from "mongoose";
 import { IBlog } from "../interfaces/Imodels";
 import { IBlogRepository } from "../interfaces/repository/IBlogRepository";
 import Blog from "../models/blog.model";
+import { GenericRepository } from "./GenericRepository";
 
-export class BlogRepository implements IBlogRepository {
-  async create(data: Partial<IBlog>): Promise<IBlog> {
-    const blog = new Blog(data);
-    return await blog.save();
+export class BlogRepository extends GenericRepository<IBlog> implements IBlogRepository {
+  constructor(){
+    super(Blog)
   }
-  async find(query: { userId?: string } = {}, page: number = 1, limit: number = 10): Promise<{
+  // async create(data: Partial<IBlog>): Promise<IBlog> {
+  //   const blog = new Blog(data);
+  //   return await blog.save();
+  // }
+  async find(query: { isPublished: boolean; userId?: string } | {}, page: number = 1, limit: number = 10): Promise<{
     blogs: IBlog[];
     total: number;
   }> {
     try {
       const skip = (page - 1) * limit;
-      const filter = query.userId ? { userId: query.userId } : {};
+      const filter = {...query};
 
       const [blogs, total] = await Promise.all([
         Blog.find(filter)
@@ -35,10 +39,5 @@ export class BlogRepository implements IBlogRepository {
   async findById(id: string): Promise<IBlog | null> {
     return await Blog.findById(id).populate("userId", "username email");
   }
-  async update(id: string, data: Partial<IBlog>): Promise<IBlog | null> {
-    return await Blog.findByIdAndUpdate(id, data, { new: true });
-  }
-  async delete(id: string): Promise<IBlog | null> {
-    return await Blog.findByIdAndDelete(id);
-  }
+
 }

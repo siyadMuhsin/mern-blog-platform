@@ -4,6 +4,7 @@ import {
   fetchUserBlogs,
   updateBlog,
   deleteBlog,
+  fetchUserDrafts,
 } from "../services/blog.service";
 import { toast } from "react-toastify";
 import { Link, useNavigate } from "react-router-dom";
@@ -21,12 +22,19 @@ interface BlogResponse {
   totalPages: number;
 }
 
+type BlogTab = "published" | "drafts";
+
 const MyBlogs: React.FC = () => {
   const { user, logout } = useAuth();
-  const [blogs, setBlogs] = useState<IBlog[]>([]);
+  const [publishedBlogs, setPublishedBlogs] = useState<IBlog[]>([]);
+  const [draftBlogs, setDraftBlogs] = useState<IBlog[]>([]);
+  const [activeTab, setActiveTab] = useState<BlogTab>("published");
   const [page, setPage] = useState(1);
+  const [draftPage, setDraftPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [hasMoreDrafts, setHasMoreDrafts] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingDrafts, setIsLoadingDrafts] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [editingBlogId, setEditingBlog] = useState<string | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -41,16 +49,9 @@ const MyBlogs: React.FC = () => {
       setIsLoading(true);
 
       try {
-        const response: BlogResponse = await fetchUserBlogs(pageNum, 5); // Assuming your API supports pagination
-        console.log("Fetched blogs:", {
-          pageNum,
-          blogs: response.blogs,
-          total: response.total,
-          totalPages: response.totalPages,
-        });
-
-        setBlogs((prev) => {
-          // Filter out duplicates (in case of overlapping fetches)
+        const response: BlogResponse = await fetchUserBlogs(pageNum, 5);
+  
+        setPublishedBlogs((prev) => {
           const newBlogs = response.blogs.filter(
             (newBlog) => !prev.some((blog) => blog._id === newBlog._id)
           );
@@ -69,25 +70,62 @@ const MyBlogs: React.FC = () => {
     [isLoading, hasMore]
   );
 
+  const fetchDrafts = useCallback(
+    async (pageNum: number) => {
+      if (isLoadingDrafts || !hasMoreDrafts) return;
+      setIsLoadingDrafts(true);
+
+      try {
+        const response: BlogResponse = await fetchUserDrafts(pageNum, 5);
+        console.log("Fetched draft blogs:", {
+          pageNum,
+          blogs: response.blogs,
+          total: response.total,
+          totalPages: response.totalPages,
+        });
+
+        setDraftBlogs((prev) => {
+          const newBlogs = response.blogs.filter(
+            (newBlog) => !prev.some((blog) => blog._id === newBlog._id)
+          );
+          return [...prev, ...newBlogs];
+        });
+
+        setHasMoreDrafts(pageNum < response.totalPages);
+        setDraftPage(pageNum + 1);
+      } catch (error: any) {
+        toast.error(error.message || "Failed to fetch your drafts");
+      } finally {
+        setIsLoadingDrafts(false);
+      }
+    },
+    [isLoadingDrafts, hasMoreDrafts]
+  );
+
   useEffect(() => {
     if (!user) {
       navigate("/login");
       toast.info("Please login to view your blogs");
       return;
     }
-    fetchBlogs(1); // Initial fetch
-  }, [user, navigate, fetchBlogs]);
+    fetchBlogs(1);
+    fetchDrafts(1);
+  }, [user, navigate, fetchBlogs, fetchDrafts]);
 
-  // IntersectionObserver to trigger fetching next page
   const handleObserver = useCallback(
     (entries: IntersectionObserverEntry[]) => {
       const target = entries[0];
-      if (target.isIntersecting && hasMore && !isLoading) {
-        console.log("IntersectionObserver triggered, fetching page:", page);
-        fetchBlogs(page);
+      if (target.isIntersecting && !isLoading) {
+        if (activeTab === "published" && hasMore) {
+          console.log("Fetching more published blogs, page:", page);
+          fetchBlogs(page);
+        } else if (activeTab === "drafts" && hasMoreDrafts) {
+          console.log("Fetching more draft blogs, page:", draftPage);
+          fetchDrafts(draftPage);
+        }
       }
     },
-    [fetchBlogs, hasMore, isLoading, page]
+    [activeTab, fetchBlogs, fetchDrafts, hasMore, hasMoreDrafts, isLoading, page, draftPage]
   );
 
   useEffect(() => {
@@ -124,10 +162,17 @@ const MyBlogs: React.FC = () => {
       setIsLoading(true);
       const response = await updateBlog(updatedBlog);
       toast.success(response.msg);
-      // Update the specific blog in our state
-      setBlogs((prev) =>
-        prev.map((blog) => (blog._id === updatedBlog._id ? updatedBlog : blog))
-      );
+      if (updatedBlog.isPublished) {
+        setPublishedBlogs((prev) =>
+          prev.map((blog) => (blog._id === updatedBlog._id ? updatedBlog : blog))
+        );
+        setDraftBlogs((prev) => prev.filter((blog) => blog._id !== updatedBlog._id));
+      } else {
+        setDraftBlogs((prev) =>
+          prev.map((blog) => (blog._id === updatedBlog._id ? updatedBlog : blog))
+        );
+        setPublishedBlogs((prev) => prev.filter((blog) => blog._id !== updatedBlog._id));
+      }
     } catch (error: any) {
       toast.error(error.message || "Failed to update blog");
     } finally {
@@ -140,7 +185,9 @@ const MyBlogs: React.FC = () => {
     try {
       setIsLoading(true);
       await deleteBlog(id);
-      setBlogs((prev) => prev.filter((blog) => blog._id !== id));
+      // Remove from both published and drafts
+      setPublishedBlogs((prev) => prev.filter((blog) => blog._id !== id));
+      setDraftBlogs((prev) => prev.filter((blog) => blog._id !== id));
       toast.success("Blog deleted successfully");
     } catch (error: any) {
       toast.error(error.message || "Failed to delete blog");
@@ -149,12 +196,26 @@ const MyBlogs: React.FC = () => {
       setIsDeleteModalOpen(false);
     }
   };
+const handlePublishSuccess = useCallback((blogId: string) => {
 
+    const publishedBlog = draftBlogs.find(blog => blog._id === blogId);
+    if (publishedBlog) {
+      const updatedBlog = { ...publishedBlog, isPublished: true };
+      setDraftBlogs(prev => prev.filter(blog => blog._id !== blogId));
+      setPublishedBlogs(prev => [updatedBlog, ...prev]);
+    }
+  }, [draftBlogs]);
   const handleDeleteClick = (e: React.MouseEvent, id: string) => {
     e.preventDefault();
     setBlogToDelete(id);
     setIsDeleteModalOpen(true);
   };
+
+  const currentBlogs = activeTab === "published" ? publishedBlogs : draftBlogs;
+  const currentLoading = activeTab === "published" ? isLoading : isLoadingDrafts;
+  const noBlogs = activeTab === "published" 
+    ? publishedBlogs.length === 0 
+    : draftBlogs.length === 0;
 
   if (!user) {
     return null;
@@ -196,11 +257,27 @@ const MyBlogs: React.FC = () => {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+        {/* Tab Navigation */}
+        <div className="flex border-b border-gray-700 mb-6">
+          <button
+            className={`px-4 py-2 font-medium ${activeTab === "published" ? "text-blue-400 border-b-2 border-blue-400" : "text-gray-400 hover:text-white"}`}
+            onClick={() => setActiveTab("published")}
+          >
+            Published ({publishedBlogs.length})
+          </button>
+          <button
+            className={`px-4 py-2 font-medium ${activeTab === "drafts" ? "text-blue-400 border-b-2 border-blue-400" : "text-gray-400 hover:text-white"}`}
+            onClick={() => setActiveTab("drafts")}
+          >
+            Drafts ({draftBlogs.length})
+          </button>
+        </div>
+
         {initialLoading ? (
           <div className="flex justify-center items-center h-64">
             <LoadingSpinner />
           </div>
-        ) : blogs.length === 0 ? (
+        ) : noBlogs ? (
           <div className="text-center py-12">
             <div className="mx-auto w-24 h-24 bg-gray-800 rounded-full flex items-center justify-center mb-6">
               <svg
@@ -219,74 +296,71 @@ const MyBlogs: React.FC = () => {
               </svg>
             </div>
             <h2 className="text-xl font-medium text-gray-300 mb-4">
-              You haven't created any blogs yet
+              {activeTab === "published"
+                ? "You haven't published any blogs yet"
+                : "You don't have any drafts"}
             </h2>
             <button
               onClick={() => navigate("/create-blog")}
               className="px-6 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg hover:opacity-90 transition-all duration-200 shadow-md"
             >
-              Create Your First Blog
+              {activeTab === "published"
+                ? "Publish Your First Blog"
+                : "Create a Draft"}
             </button>
           </div>
         ) : (
           <>
-            <div className="flex justify-center items-center mb-8 ">
-              <h2 className="text-2xl font-bold text-white">
-                Your Published Blogs{" "}
-                <span className="text-blue-400">({blogs.length})</span>
-              </h2>
-            </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {blogs.map((blog) => (
+              {currentBlogs.map((blog) => (
                 <div key={blog._id} className="relative group">
-                  <Link
-                    to={`/blog/${blog._id}`}
-                    className="block h-full"
-                    aria-label={`Read more about ${blog.title}`}
-                  >
-                    <BlogCard
-                      id={blog._id}
-                      author={user.username || "Unknown"}
-                      title={blog.title}
-                      content={blog.content}
-                      imageUrl={blog.imageUrl}
-                      date={new Date(blog.createdAt).toLocaleDateString(
-                        "en-US",
-                        {
-                          year: "numeric",
-                          month: "short",
-                          day: "numeric",
-                        }
-                      )}
-                    />
-                  </Link>
+                   <BlogCard
+      key={blog._id}
+      id={blog._id}
+      author={user.username || "Unknown"}
+      title={blog.title}
+      content={blog.content}
+      imageUrl={blog.imageUrl}
+      date={new Date(blog.createdAt).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      })}
+      status={blog.isPublished}
+      onPublishSuccess={!blog.isPublished ? handlePublishSuccess : undefined}
+    />
 
-                  <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setEditingBlog(blog._id);
-                      }}
-                      className="p-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-all duration-200 shadow-md"
-                      title="Edit"
-                    >
-                      <FiEdit2 />
-                    </button>
-                    <button
-                      onClick={(e) => handleDeleteClick(e, blog._id)}
-                      className="p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all duration-200 shadow-md"
-                      title="Delete"
-                    >
-                      <FiTrash2 />
-                    </button>
-                  </div>
+               <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+  {!blog.isPublished && (
+    <button
+      onClick={(e) => {
+        e.preventDefault();
+        setEditingBlog(blog._id);
+      }}
+      className="p-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-all duration-200 shadow-md"
+      title="Edit"
+    >
+      <FiEdit2 />
+    </button>
+  )}
+  <button
+    onClick={(e) => {
+      e.preventDefault();
+      setBlogToDelete(blog._id);
+      setIsDeleteModalOpen(true);
+    }}
+    className="p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all duration-200 shadow-md"
+    title="Delete"
+  >
+    <FiTrash2 />
+  </button>
+</div>
                 </div>
               ))}
             </div>
 
             {/* Loading spinner for pagination */}
-            {isLoading && blogs.length > 0 && (
+            {currentLoading && currentBlogs.length > 0 && (
               <div className="flex justify-center items-center mt-8">
                 <LoadingSpinner />
               </div>

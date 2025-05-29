@@ -8,5 +8,7 @@ export interface IBlogController{
     getUserBlogs(req:AuthRequest,res:Response):Promise<void>
     updateBlog(req:AuthRequest,res:Response):Promise<void>
     deleteBlog(req:AuthRequest,res:Response):Promise<void>
+    draftedBlogs(req:AuthRequest,res:Response):Promise<void>
+    publishBlog(req:AuthRequest,res:Response):Promise<void>
     
 }

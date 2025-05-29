@@ -13,7 +13,7 @@ export class AuthService implements IAuthServices {
   ) {}
 
   async signup(username: string, email: string, password: string): Promise<{ ok: boolean; message: string }> {
-    const existingUser = await this._userRepository.findByEmail(email);
+    const existingUser = await this._userRepository.findOne({email});
     if (existingUser) {
       return { ok: false, message: "User already exists" };
     }
@@ -28,7 +28,7 @@ export class AuthService implements IAuthServices {
 
   async login(email: string, password: string): Promise<{ ok: boolean; message: string ,accessToken?:string,refreshToken?:string,user?:IUser}> {
     try {
-      const existingUser = await this._userRepository.findByEmail(email);
+      const existingUser = await this._userRepository.findOne({email});
       if (!existingUser) {
         return { ok: false, message: "Invalid email or password" };
       }

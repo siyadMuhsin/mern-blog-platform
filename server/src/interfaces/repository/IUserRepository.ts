@@ -1,8 +1,6 @@
 import { IUser } from "../Imodels";
+import { IGenericRepository } from "./IGenericRepository";
 
-export interface IUserRepository{
-    create(data:Partial<IUser>):Promise<IUser>
-    findById(id:string):Promise<IUser|null>
-    findByEmail(email:string):Promise<IUser|null>
-    findOne(query:Partial<IUser>):Promise<IUser|null>
+export interface IUserRepository extends IGenericRepository<IUser>{
+ 
 }

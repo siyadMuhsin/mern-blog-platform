@@ -34,13 +34,7 @@ const Home: React.FC = () => {
       setError(null);
 
       try {
-        const response: BlogResponse = await fetching(pageNum, 1);
-        console.log("Fetched blogs:", { 
-          pageNum, 
-          blogs: response.blogs, 
-          total: response.total, 
-          totalPages: response.totalPages 
-        });
+        const response: BlogResponse = await fetching(pageNum, 1)
 
         setBlogs((prev) => {
           // Filter out duplicates (in case of overlapping fetches)
@@ -272,6 +266,7 @@ const Home: React.FC = () => {
                 content={blog.content}
                 imageUrl={blog.imageUrl}
                 author={blog.userId?.username || "Unknown"}
+                status={blog.isPublished}
                 date={new Date(blog.createdAt).toLocaleDateString("en-US", {
                   year: "numeric",
                   month: "long",

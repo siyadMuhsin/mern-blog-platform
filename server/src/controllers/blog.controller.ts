@@ -88,7 +88,7 @@ export class BlogController implements IBlogController {
         return;
       }
 
-      const result = await this._blogService.getAllBlogs(pageNum, limitNum, userId as string | undefined);
+      const result = await this._blogService.getAllBlogs(pageNum, limitNum, userId as string | undefined,true);
 
       this.sendResponse(res, { ok: true, data: result }, HttpStatus.OK);
     } catch (error) {
@@ -121,7 +121,7 @@ export class BlogController implements IBlogController {
       const { page = "1", limit = "10" } = req.query;
       const pageNum = parseInt(page as string, 10);
       const limitNum = parseInt(limit as string, 10);
-      const result = await this._blogService.getAllBlogs(pageNum,limitNum,userId);
+      const result = await this._blogService.getAllBlogs(pageNum,limitNum,userId,true);
 
       this.sendResponse(res, result, HttpStatus.OK);
     } catch (error) {
@@ -162,7 +162,7 @@ export class BlogController implements IBlogController {
           HttpStatus.BAD_REQUEST
         );
       }
-      console.log(req.file);
+  
 
       const result = await this._blogService.updateBlog(
         { title, content },
@@ -207,6 +207,36 @@ async deleteBlog(req: AuthRequest, res: Response): Promise<void> {
   }
 }
 
+async draftedBlogs(req:AuthRequest,res:Response):Promise<void>{
+  try {
+    const userId = req.user as string;
+      const { page = "1", limit = "10" } = req.query;
+      const pageNum = parseInt(page as string, 10);
+      const limitNum = parseInt(limit as string, 10);
+      const result=await this._blogService.getAllBlogs(pageNum,limitNum,userId,false)
+ 
+      this.sendResponse(res,result,HttpStatus.OK)
+  } catch (error) {
+    const err= error as Error
+    this.sendResponse(res,{msg:err.message},HttpStatus.SERVER_ERROR)
+  }
+}
+
+async publishBlog(req:AuthRequest,res:Response):Promise<void>{
+  try {
+    const userId=req.user as string
+    const {blogId}= req.params
+    if(!mongoose.Types.ObjectId.isValid(blogId)){
+      this.sendResponse(res,{ok:false,msg:"Blog Id is required"},HttpStatus.BAD_REQUEST)
+      return
+    }
+    const result=await this._blogService.blogPublish(userId,blogId)
+    this.sendResponse(res,result,HttpStatus.OK)
+  } catch (error) {
+    const err=error as Error
+    this.sendResponse(res,{msg:err.message},HttpStatus.SERVER_ERROR)
+  }
+}
   private sendResponse(res: Response, data: any, status: HttpStatus) {
     res.status(status).json(data);
   }

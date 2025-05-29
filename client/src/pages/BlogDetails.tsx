@@ -34,13 +34,7 @@ const BlogDetails: React.FC = () => {
     fetchBlog();
   }, [id]);
 
-  // Estimated read time calculation (assuming 200 words per minute)
-  const calculateReadTime = (content: string) => {
-    const wordsPerMinute = 200;
-    const wordCount = content.split(/\s+/).length;
-    const minutes = Math.ceil(wordCount / wordsPerMinute);
-    return `${minutes} min read`;
-  };
+
 
   if (isLoading) {
     return (
@@ -127,8 +121,8 @@ const BlogDetails: React.FC = () => {
                 month: "long",
                 day: "numeric",
               })}</p>
-              <span className="hidden sm:block">•</span>
-              <p>{calculateReadTime(blog.content)}</p>
+              
+             
               <span className="hidden sm:block">•</span>
               <p>Author: {blog.userId?.username || "Unknown"}</p>
             </div>

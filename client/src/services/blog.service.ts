@@ -1,4 +1,5 @@
 
+import type { AxiosError } from "axios";
 import api from "../config/axiosConfig";
 import type { IBlog } from "../interfaces/interface";
 
@@ -68,7 +69,24 @@ return response.data
     throw new Error(error.response?.data?.msg)
     
   }
-
+}
+const fetchUserDrafts=async (page:number,limit:number)=>{
+  try {
+    const response=await api.get(`/blog/draft/?page=${page}&limit=${limit}`)
+    return response.data
+  } catch (error:any) {
+    throw new Error(error?.response?.data?.msg)
+    
+  }
+}
+const publishBlog=async(blogId:string)=>{
+  try {
+    const publishBlog=await api.patch(`/blog/publish/${blogId}`)
+    return publishBlog.data
+  } catch (error:any) {
+    throw new Error(error.response.data.msg)
+    
+  }
 
 }
-export { createBlog,fetching,getBlogById,fetchUserBlogs ,updateBlog,deleteBlog};
+export { createBlog,fetching,getBlogById,fetchUserBlogs ,updateBlog,deleteBlog,fetchUserDrafts,publishBlog};

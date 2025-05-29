@@ -1,7 +1,7 @@
 import { IBlog } from "../Imodels";
 
 export interface IBlogServices{
-    getAllBlogs(page:number,limit:number,userId?:string):Promise<{
+    getAllBlogs(page:number,limit:number,userId?:string,isPublished?:boolean):Promise<{
           blogs: IBlog[];
             total: number;
             page: number;
@@ -19,4 +19,6 @@ export interface IBlogServices{
     blog?:IBlog
    }>
    deleteBlog(blogId:string,userId:string):Promise<{ok:boolean,msg:string}>
+   blogPublish(userId:string,blogId:string):Promise<{ok:boolean,msg:string}>
+   
 } 

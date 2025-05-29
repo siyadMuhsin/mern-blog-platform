@@ -12,9 +12,13 @@ const authmiddleware=container.get<IAuthMiddleware>(TYPES.AuthMiddleware)
 blogRouter.post('/',upload.single("image"),authmiddleware.verifyToken.bind(authmiddleware),blogController.createBlog.bind(blogController))
 blogRouter.get('/',blogController.getAllBlogs.bind(blogController))
 blogRouter.get('/user',authmiddleware.verifyToken.bind(authmiddleware),blogController.getUserBlogs.bind(blogController))
+blogRouter.get('/draft',authmiddleware.verifyToken.bind(authmiddleware),blogController.draftedBlogs.bind(blogController))
+blogRouter.patch('/publish/:blogId',authmiddleware.verifyToken.bind(authmiddleware),blogController.publishBlog.bind(blogController))
 blogRouter.get('/:blogId',blogController.getBlogDetails.bind(blogController))
+
 blogRouter.put('/:blogId',authmiddleware.verifyToken.bind(authmiddleware),upload.single("image"),blogController.updateBlog.bind(blogController))
 blogRouter.delete('/:blogId',authmiddleware.verifyToken.bind(authmiddleware),blogController.deleteBlog.bind(blogController))
+
 function test(){
     console.log("working")
 }

@@ -14,27 +14,37 @@ export class BlogService implements IBlogServices {
     @inject(TYPES.BlogRepository) private _blogRepository: IBlogRepository,
     @inject(TYPES.UserRepository) private _userRepository: IUserRepository
   ) {}
- async getAllBlogs(page: number, limit: number, userId?: string): Promise<{
+  async getAllBlogs(
+    page: number,
+    limit: number,
+    userId?: string,
+    isPublished?: boolean
+  ): Promise<{
     blogs: IBlog[];
     total: number;
     page: number;
     totalPages: number;
   }> {
     try {
-      const query: any = {};
+      const query: any = { isPublished };
       if (userId) {
         query.userId = userId;
       }
 
-      const { blogs, total } = await this._blogRepository.find(query, page, limit);
 
-    const formattedBlogs = blogs.map((blog) => ({
-        ...blog.toObject?.(), 
+      const { blogs, total } = await this._blogRepository.find(
+        query,
+        page,
+        limit
+      );
+
+      const formattedBlogs = blogs.map((blog) => ({
+        ...blog.toObject?.(),
         content: blog.content.slice(0, 100), // Truncate content for previews
       }));
 
-      console.log(formattedBlogs);
-      
+    
+
       return {
         blogs: formattedBlogs,
         total,
@@ -122,30 +132,40 @@ export class BlogService implements IBlogServices {
       blog: updatedBlog,
     };
   }
-async deleteBlog(blogId: string, userId: string): Promise<{ ok: boolean; msg: string }> {
-  const blog = await this._blogRepository.findById(blogId) ;
+  async deleteBlog(
+    blogId: string,
+    userId: string
+  ): Promise<{ ok: boolean; msg: string }> {
+    const blog = await this._blogRepository.findById(blogId);
 
-  if (!blog) {
-    throw new Error("Blog not found");
+    if (!blog) {
+      throw new Error("Blog not found");
+    }
+
+    if (
+      typeof blog.userId === "object" &&
+      blog.userId !== null &&
+      "_id" in blog.userId &&
+      (blog.userId as any)._id.toString() !== userId
+    ) {
+
+      throw new Error("You are not authorized to delete this blog");
+    }
+    const deleted = await this._blogRepository.delete(blogId);
+    if (!deleted) {
+      throw new Error("Failed to delete blog");
+    }
+    return { ok: true, msg: "Blog deleted successfully" };
   }
-
-  if (
-  typeof blog.userId === "object" &&
-  blog.userId !== null &&
-  "_id" in blog.userId &&
-  (blog.userId as any)._id.toString() !== userId
-) {
-  // console.log(userId ,(blog.userId as any)._id.toString() );
-  
-  throw new Error("You are not authorized to delete this blog");
-}
-
-  const deleted = await this._blogRepository.delete(blogId);
-
-  if (!deleted) {
-    throw new Error("Failed to delete blog");
+  async blogPublish(userId: string, blogId: string): Promise<{ ok: boolean; msg: string; }> {
+    const user=await this._userRepository.findById(userId)
+    if(!user){
+      throw new Error("User Not Fount")
+    }
+    const update=await this._blogRepository.update(blogId,{isPublished:true})
+    if(!update){
+      throw new Error("Cannont find the BlogId")
+    }
+    return {ok:true,msg:"Blog Published Successfully"}
   }
-
-  return { ok: true, msg: "Blog deleted successfully" };
-}
 }

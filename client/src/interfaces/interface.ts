@@ -15,6 +15,7 @@ export interface IBlog {
     content:string,
     imageFile?:File|null
     imageUrl:string,
+    isPublished:boolean
     createdAt:Date,
     userId:{username:string,_id:string,email:string}
 }
